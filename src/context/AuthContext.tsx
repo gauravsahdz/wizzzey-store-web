@@ -1,9 +1,8 @@
-
 "use client";
 
 import type { User } from '@/lib/types';
 import { loginUser, registerUser, fetchUserProfile } from '@/services/api';
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,14 +14,15 @@ interface AuthContextType {
   logout: () => void;
   register: (name: string, email: string, pass: string) => Promise<void>;
   updateUserProfileContext: (updatedUserData: User) => void; // New
+  handleAuthSuccess: (newToken: string, userData?: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+function AuthContent({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true); // Initialize loading to true
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -160,13 +160,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(updatedUserData);
   };
 
-
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, register, updateUserProfileContext }}>
+    <AuthContext.Provider value={{
+      user,
+      token,
+      loading,
+      login,
+      logout,
+      register,
+      updateUserProfileContext,
+      handleAuthSuccess,
+    }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={
+      <AuthContext.Provider value={{
+        user: null,
+        token: null,
+        loading: true,
+        login: async () => {},
+        logout: () => {},
+        register: async () => {},
+        updateUserProfileContext: () => {},
+        handleAuthSuccess: () => {},
+      }}>
+        {children}
+      </AuthContext.Provider>
+    }>
+      <AuthContent>{children}</AuthContent>
+    </Suspense>
+  );
+}
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

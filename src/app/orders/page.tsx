@@ -1,6 +1,6 @@
-
 "use client";
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { Order } from '@/lib/types';
@@ -13,8 +13,7 @@ import Link from 'next/link';
 import { History, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast'; 
 
-
-export default function OrdersPage() {
+function OrdersContent() {
   const { user, loading: authLoading, token } = useAuth(); 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -79,5 +78,17 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <LoadingSpinner size={64} />
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
   );
 }

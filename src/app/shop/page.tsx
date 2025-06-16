@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useState, useCallback }  from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { Product, PaginatedResponse, Category, AvailableFilters as AppAvailableFilters, AppliedFilters } from '@/lib/types';
 import { fetchProducts, fetchCategories } from '@/services/api'; 
@@ -41,8 +40,7 @@ type AppliedFiltersForApi = {
   sortOrder?: 'asc' | 'desc';
 };
 
-
-export default function ShopPage() {
+function ShopContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -271,5 +269,27 @@ export default function ShopPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col md:flex-row gap-8">
+        <aside className="w-full md:w-1/4 lg:w-1/5">
+          <div className="p-6 bg-card shadow-lg rounded-none space-y-6 h-full flex flex-col items-center justify-center min-h-[300px]">
+            <LoadingSpinner />
+            <p className="text-muted-foreground">Loading filters...</p>
+          </div>
+        </aside>
+        <main className="w-full md:w-3/4 lg:w-4/5">
+          <div className="flex justify-center items-center min-h-[60vh]">
+            <LoadingSpinner size={64} />
+          </div>
+        </main>
+      </div>
+    }>
+      <ShopContent />
+    </Suspense>
   );
 }

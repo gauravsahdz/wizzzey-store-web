@@ -1,6 +1,6 @@
-
 "use client";
 
+import { Suspense } from 'react';
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -17,7 +17,7 @@ const formatAddress = (address?: ShippingAddress) => {
   return `${address.street}, ${address.city}, ${address.state} ${address.zipCode}, ${address.country}`;
 };
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { user, logout, loading, token } = useAuth(); 
   const router = useRouter();
 
@@ -125,5 +125,17 @@ export default function ProfilePage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <LoadingSpinner size={64} />
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   );
 }
