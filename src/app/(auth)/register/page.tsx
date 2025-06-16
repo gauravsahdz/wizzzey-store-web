@@ -43,7 +43,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-12">
+    <div className="w-full flex items-center justify-center min-h-[calc(100vh-200px)] py-12">
       <Card className="w-full max-w-md shadow-xl rounded-none">
         <CardHeader className="text-center">
           <UserPlus size={48} className="mx-auto mb-4 text-primary" />

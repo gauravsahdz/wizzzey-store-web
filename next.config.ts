@@ -1,4 +1,3 @@
-
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -20,9 +19,15 @@ const nextConfig: NextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '3000', // Or your API port if different
-        pathname: '/uploads/**', // Or a more general '/**' if image paths vary
+        port: '3000',
+        pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'ecommerce-api-psp9.onrender.com',
+        port: '',
+        pathname: '/uploads/**',
+      }
     ],
   },
 };

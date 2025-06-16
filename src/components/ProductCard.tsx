@@ -32,6 +32,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   // Fallback for product image if not available
   const imageUrl = product.images && product.images.length > 0 ? product.images[0] : "https://placehold.co/600x800.png";
 
+  console.log(imageUrl);
+
 
   return (
     <div className="bg-card text-card-foreground shadow-lg hover:shadow-xl transition-shadow duration-300 group overflow-hidden">
