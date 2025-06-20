@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -23,8 +22,25 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   categoryName?: string; // For display purposes
-  colors?: { name: string; code: string }[];
+  colors?: { name: string; code: string; id?: string; _id?: string }[];
   availableSizes?: string[];
+  imageUrl?: string;
+  media?: { url: string }[];
+  compareAtPrice?: number;
+  costPrice?: number;
+  discountPercentage?: number;
+  ratings?: { average: number; count: number };
+  lowStockThreshold?: number;
+  stock?: number;
+  status?: string;
+  isFeatured?: boolean;
+  brandId?: string;
+  tags?: string[];
+  weight?: { value: number; unit: string };
+  dimensions?: { length: number; width: number; height: number; unit: string };
+  seo?: { title: string; description: string; keywords: string[] };
+  slug?: string;
+  sku?: string;
 }
 
 export interface Category {
@@ -43,6 +59,7 @@ export interface OrderItem {
   productImage?: string; // For display
   quantity: number;
   price: number; // Price at the time of order
+  brandId?: string;
 }
 
 export interface ShippingAddress {
@@ -75,6 +92,8 @@ export interface Order {
 
 export interface CartItem extends Product {
   quantity: number;
+  selectedSize?: string;
+  selectedColor?: string;
 }
 
 // This represents the available filter options to be passed to FilterPanel

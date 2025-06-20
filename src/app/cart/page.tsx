@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type FormEvent } from 'react';
@@ -60,12 +59,14 @@ export default function CartPage() {
     }
 
     setIsProcessingOrder(true);
+    console.log("cartItems", cartItems);
     const orderItems: OrderItem[] = cartItems.map(item => ({
       productId: item.id,
       productName: item.name,
       productImage: item.images[0],
       quantity: item.quantity,
       price: item.price,
+      brandId: item.brandId,
     }));
 
     // Format shipping address into a single string for customerInfo
@@ -157,31 +158,31 @@ export default function CartPage() {
                     <h3 className="text-lg font-semibold">Shipping Details</h3>
                     <div>
                         <Label htmlFor="street">Street</Label>
-                        <Input id="street" value={shippingAddress.street} onChange={e => setShippingAddress({...shippingAddress, street: e.target.value})} placeholder="123 Main St" required/>
+                        <Input id="street" value={shippingAddress.street} onChange={e => setShippingAddress({...shippingAddress, street: e.target.value})} placeholder="Enter your street" required/>
                     </div>
                     <div>
                         <Label htmlFor="city">City</Label>
-                        <Input id="city" value={shippingAddress.city} onChange={e => setShippingAddress({...shippingAddress, city: e.target.value})} placeholder="Anytown" required/>
+                        <Input id="city" value={shippingAddress.city} onChange={e => setShippingAddress({...shippingAddress, city: e.target.value})} placeholder="Enter your city" required/>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <Label htmlFor="state">State</Label>
-                            <Input id="state" value={shippingAddress.state} onChange={e => setShippingAddress({...shippingAddress, state: e.target.value})} placeholder="CA" required/>
+                            <Input id="state" value={shippingAddress.state} onChange={e => setShippingAddress({...shippingAddress, state: e.target.value})} placeholder="Enter your state" required/>
                         </div>
                         <div>
                             <Label htmlFor="zip">Zip Code</Label>
-                            <Input id="zip" value={shippingAddress.zipCode} onChange={e => setShippingAddress({...shippingAddress, zipCode: e.target.value})} placeholder="90210" required/>
+                            <Input id="zip" value={shippingAddress.zipCode} onChange={e => setShippingAddress({...shippingAddress, zipCode: e.target.value})} placeholder="Enter your zip code" required/>
                         </div>
                     </div>
                      <div>
                         <Label htmlFor="country">Country</Label>
-                        <Input id="country" value={shippingAddress.country} onChange={e => setShippingAddress({...shippingAddress, country: e.target.value})} placeholder="India" required/>
+                        <Input id="country" value={shippingAddress.country} onChange={e => setShippingAddress({...shippingAddress, country: e.target.value})} placeholder="Enter your country" required/>
                     </div>
                      <div>
                         <Label htmlFor="phone">Phone</Label>
                         <div className="relative">
                             <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                            <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 XXXXXXXXXX" required className="pl-10"/>
+                            <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Enter your phone number" required className="pl-10"/>
                         </div>
                     </div>
                 </div>

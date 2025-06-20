@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -74,7 +73,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (product) {
-      addToCart(product, quantity);
+      addToCart(product, quantity, selectedSize, selectedColor);
       toast({
         title: "Added to cart!",
         description: `${product.name} (x${quantity}) has been added to your cart.`,
@@ -95,12 +94,25 @@ export default function ProductDetailPage() {
     return <div className="text-center py-10 text-xl">Product not found. It might have been removed or the link is incorrect.</div>;
   }
   
-  const mainImage = product.images && product.images.length > 0 ? product.images[0] : "https://placehold.co/600x800.png";
-  const thumbnailImages = product.images.length > 1 ? product.images.slice(1,4) : [];
-
+  const mainImage = product.imageUrl || (product.images && product.images[0]) || "https://placehold.co/600x800.png";
+  const allImages = [mainImage, ...(product.media || []).map((m: any) => m.url).filter(Boolean)];
+  const thumbnailImages = allImages.length > 1 ? allImages.slice(1, 4) : [];
+  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
+  const discount = hasDiscount
+    ? product.discountPercentage || Math.round(100 - (product.price / product.compareAtPrice) * 100)
+    : 0;
+  const ratings = product.ratings || { average: 0, count: 0 };
+  const isLowStock = typeof product.lowStockThreshold === 'number' && product.stock > 0 && product.stock <= product.lowStockThreshold;
 
   return (
     <div className="container mx-auto py-8">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {product.isFeatured && <span className="bg-yellow-400 text-xs font-bold px-2 py-1 rounded">Featured</span>}
+        <span className="text-xs text-muted-foreground">SKU: {product.sku}</span>
+        <span className="text-xs text-muted-foreground">Status: {product.status}</span>
+        <span className="text-xs text-muted-foreground">Stock: {product.stock}</span>
+        {isLowStock && <span className="text-xs text-orange-600">Low stock</span>}
+      </div>
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
         <ArrowLeft size={16} className="mr-2" /> Back to Shop
       </Button>
@@ -134,14 +146,33 @@ export default function ProductDetailPage() {
           {product.categoryName && <p className="text-md text-muted-foreground mb-3">Category: {product.categoryName}</p>}
           <div className="flex items-center mb-4">
             <div className="flex text-yellow-400">
-                {[...Array(5)].map((_, i) => <Star key={i} size={20} fill="currentColor" />)}
+                {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={20} fill={i < ratings.average ? 'currentColor' : 'none'} />)}
             </div>
-            <span className="ml-2 text-muted-foreground">(125 Reviews)</span>
+            <span className="ml-2 text-muted-foreground">({ratings.count} Reviews)</span>
           </div>
-          <p className="text-3xl font-semibold text-primary mb-6">₹{product.price.toFixed(2)}</p>
-          
+          <div className="flex items-center gap-2 mb-2">
+            {hasDiscount && (
+              <>
+                <span className="text-3xl font-semibold text-primary">₹{product.price.toFixed(2)}</span>
+                <span className="text-lg line-through text-muted-foreground">₹{product.compareAtPrice?.toFixed(2)}</span>
+                <span className="text-md text-green-600 font-semibold">{discount}% OFF</span>
+              </>
+            )}
+            {!hasDiscount && (
+              <span className="text-3xl font-semibold text-primary">₹{product.price.toFixed(2)}</span>
+            )}
+          </div>
+          {typeof product.costPrice === 'number' && (
+            <div className="text-sm text-muted-foreground mb-1">Cost: ₹{product.costPrice.toFixed(2)}</div>
+          )}
           <p className="text-foreground leading-relaxed mb-6">{product.description}</p>
-
+          {product.seo && (
+            <div className="mb-4">
+              <div className="text-xs text-muted-foreground">SEO Title: {product.seo.title}</div>
+              <div className="text-xs text-muted-foreground">SEO Desc: {product.seo.description}</div>
+              <div className="text-xs text-muted-foreground">SEO Keywords: {product.seo.keywords?.join(', ')}</div>
+            </div>
+          )}
           {product.availableSizes && product.availableSizes.length > 0 && (
             <div className="mb-6">
               <label htmlFor="size-select" className="block text-sm font-medium text-foreground mb-1">Size:</label>
@@ -157,7 +188,6 @@ export default function ProductDetailPage() {
               </Select>
             </div>
           )}
-
           {product.colors && product.colors.length > 0 && (
             <div className="mb-6">
                 <label className="block text-sm font-medium text-foreground mb-2">Color:</label>
@@ -177,8 +207,6 @@ export default function ProductDetailPage() {
                 </div>
             </div>
           )}
-
-
           <div className="flex items-center space-x-4 mb-6">
             <label htmlFor="quantity" className="text-sm font-medium text-foreground">Quantity:</label>
             <Input
@@ -190,25 +218,44 @@ export default function ProductDetailPage() {
               className="w-20 text-center"
             />
           </div>
-
-          {product.inStock ? (
-            <Button size="lg" onClick={handleAddToCart} className="w-full md:w-auto transition-transform transform hover:scale-105">
-              <ShoppingCart size={20} className="mr-2" /> Add to Cart
-            </Button>
-          ) : (
+          {product.stock === 0 || product.status === 'out_of_stock' ? (
             <Button size="lg" disabled className="w-full md:w-auto">
               Out of Stock
             </Button>
+          ) : (
+            <Button size="lg" onClick={handleAddToCart} className="w-full md:w-auto transition-transform transform hover:scale-105">
+              <ShoppingCart size={20} className="mr-2" /> Add to Cart
+            </Button>
           )}
-          {product.inStock && (
+          {product.stock > 0 && (
              <div className="flex items-center text-green-600 mt-4">
                 <CheckCircle size={18} className="mr-2"/>
                 <span>In Stock - Ships in 2-3 business days</span>
              </div>
           )}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {product.tags && product.tags.map(tag => (
+              <span key={tag} className="px-2 py-0.5 text-xs bg-accent rounded">{tag}</span>
+            ))}
+          </div>
+          <div className="mt-6 border-t pt-4">
+            <h3 className="text-lg font-semibold mb-2">Product Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+              <div><span className="font-medium">SKU:</span> {product.sku}</div>
+              <div><span className="font-medium">Brand:</span> {product.brandId}</div>
+              <div><span className="font-medium">Category:</span> {product.categoryId}</div>
+              <div><span className="font-medium">Created:</span> {new Date(product.createdAt).toLocaleDateString()}</div>
+              <div><span className="font-medium">Updated:</span> {new Date(product.updatedAt).toLocaleDateString()}</div>
+              {product.weight && (
+                <div><span className="font-medium">Weight:</span> {product.weight.value} {product.weight.unit}</div>
+              )}
+              {product.dimensions && (
+                <div><span className="font-medium">Dimensions:</span> {product.dimensions.length} x {product.dimensions.width} x {product.dimensions.height} {product.dimensions.unit}</div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-      
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div className="mt-16">

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -40,7 +39,39 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
         <Link href={`/shop/product/${item.id}`}>
          <h3 className="text-md md:text-lg font-semibold hover:text-primary transition-colors">{item.name}</h3>
         </Link>
-        <p className="text-sm text-muted-foreground">Price: ₹{item.price.toFixed(2)}</p>
+        {item.sku && <div className="text-xs text-muted-foreground">SKU: {item.sku}</div>}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Price: ₹{item.price.toFixed(2)}</span>
+          {item.compareAtPrice && item.compareAtPrice > item.price && (
+            <span className="text-xs line-through text-muted-foreground">₹{item.compareAtPrice.toFixed(2)}</span>
+          )}
+        </div>
+        {item.selectedSize && (
+          <span className="inline-block px-2 py-0.5 text-xs border rounded bg-muted-foreground/10 mr-2 mt-1">Size: {item.selectedSize}</span>
+        )}
+        {item.selectedColor && (
+          <span className="inline-flex items-center gap-1 text-xs mt-1">
+            Color:
+            <span className="w-4 h-4 rounded-full border border-gray-300 inline-block" style={{ backgroundColor: item.colors?.find(c => c.name === item.selectedColor)?.code || item.selectedColor }} title={item.selectedColor}></span>
+            {item.selectedColor}
+          </span>
+        )}
+        {typeof item.stock === 'number' && (
+          <div className="text-xs mt-1">
+            {item.stock === 0 || item.status === 'out_of_stock' ? (
+              <span className="text-destructive">Out of Stock</span>
+            ) : (
+              <span className="text-green-600">In stock: {item.stock}</span>
+            )}
+          </div>
+        )}
+        {item.tags && item.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {item.tags.map(tag => (
+              <span key={tag} className="px-2 py-0.5 text-xs bg-accent rounded">{tag}</span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex items-center space-x-2">
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleQuantityChange(item.quantity - 1)} disabled={item.quantity <= 1}>
@@ -59,7 +90,7 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
         </Button>
       </div>
       <p className="text-md md:text-lg font-semibold w-24 text-right">₹{(item.price * item.quantity).toFixed(2)}</p>
-      <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.name} from cart`}>
+      <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.id, item.selectedSize, item.selectedColor)} className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${item.name} from cart`}>
         <X size={20} />
       </Button>
     </div>

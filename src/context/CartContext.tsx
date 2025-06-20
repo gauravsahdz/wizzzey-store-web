@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Product, CartItem } from '@/lib/types';
@@ -6,9 +5,9 @@ import React, { createContext, useContext, useState, type ReactNode, useEffect }
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
+  removeFromCart: (productId: string, selectedSize?: string, selectedColor?: string) => void;
+  updateQuantity: (productId: string, quantity: number, selectedSize?: string, selectedColor?: string) => void;
   clearCart: () => void;
   cartTotal: number;
   itemCount: number;
@@ -48,35 +47,54 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cartItems, hasMounted]);
 
-  const addToCart = (product: Product, quantity: number = 1) => {
+  const addToCart = (product: Product, quantity: number = 1, selectedSize?: string, selectedColor?: string) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
+      const existingItem = prevItems.find(item =>
+        item.id === product.id &&
+        item.selectedSize === selectedSize &&
+        item.selectedColor === selectedColor
+      );
       if (existingItem) {
         return prevItems.map(item =>
-          item.id === product.id ? { ...item, quantity: Math.max(0, item.quantity + quantity) } : item // Ensure quantity doesn't go below 0
+          item.id === product.id &&
+          item.selectedSize === selectedSize &&
+          item.selectedColor === selectedColor
+            ? { ...item, quantity: Math.max(0, item.quantity + quantity) }
+            : item
         );
       }
-      // Ensure product has necessary fields for a CartItem
-      const newCartItem: CartItem = { 
-        ...product, 
-        quantity: Math.max(1, quantity) // Ensure new item has at least 1 quantity
+      const newCartItem: CartItem = {
+        ...product,
+        quantity: Math.max(1, quantity),
+        selectedSize,
+        selectedColor,
       };
       return [...prevItems, newCartItem];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
+  const removeFromCart = (productId: string, selectedSize?: string, selectedColor?: string) => {
+    setCartItems(prevItems =>
+      prevItems.filter(item =>
+        !(item.id === productId &&
+          (selectedSize === undefined || item.selectedSize === selectedSize) &&
+          (selectedColor === undefined || item.selectedColor === selectedColor))
+      )
+    );
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number, selectedSize?: string, selectedColor?: string) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, selectedSize, selectedColor);
       return;
     }
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item.id === productId ? { ...item, quantity } : item
+        item.id === productId &&
+        item.selectedSize === selectedSize &&
+        item.selectedColor === selectedColor
+          ? { ...item, quantity }
+          : item
       )
     );
   };

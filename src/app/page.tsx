@@ -25,6 +25,7 @@ export default function HomePage() {
     fetchProducts(1, 4) // Fetch 4 featured products using the new service
       .then((response: PaginatedResponse<Product>) => {
         if (response && response.data && Array.isArray(response.data.items)) {
+          console.log('Log: response.data.items', response.data.items);
           setFeaturedProducts(response.data.items);
         } else {
           console.warn("Featured products API response is not in the expected format or items are missing:", response);

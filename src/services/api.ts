@@ -13,6 +13,7 @@ interface ApiProduct {
   price: number;
   imageUrl?: string;
   media?: { url: string; type: string; alt?: string; _id: string; id: string }[];
+  brandId?: string;
   stock: number;
   categoryId: string;
   categoryName?: string; // If API provides this
@@ -326,6 +327,7 @@ const mapApiProductToProduct = (apiProduct: ApiProduct): Product => {
     inStock: apiProduct.stock > 0,
     colors: apiProduct.colors,
     availableSizes: apiProduct.availableSizes,
+    brandId: apiProduct.brandId,
     createdAt: apiProduct.createdAt,
     updatedAt: apiProduct.updatedAt,
   };
@@ -346,6 +348,7 @@ const mapApiOrderToOrder = (apiOrder: ApiOrder): Order => {
         ...item,
         productName: item.productName || "Product Name Unavailable",
         productImage: productImage,
+        brandId: item.brandId,
       };
     }),
     status: apiOrder.status,
