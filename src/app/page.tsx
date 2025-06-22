@@ -1,9 +1,9 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { Product, Category, PaginatedResponse } from '@/lib/types';
 import { getMockCategories } from '@/lib/mock-data'; // Keep getMockCategories for now
 import { fetchProducts } from '@/services/api'; // Use the new API service
@@ -19,6 +19,17 @@ export default function HomePage() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const { toast } = useToast(); // Initialize toast
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Check for products_ids parameter and redirect to shop page
+  useEffect(() => {
+    const productsIds = searchParams.get('products_ids');
+    if (productsIds) {
+      // Redirect to shop page with the products_ids parameter
+      router.push(`/shop?products_ids=${encodeURIComponent(productsIds)}`);
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     setLoadingProducts(true);

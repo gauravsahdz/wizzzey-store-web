@@ -1,5 +1,4 @@
-
-import type { PaginatedResponse, Product, User, Order, OrderItem, ShippingAddress, CustomerInfo, Category, AppAvailableFilters } from '@/lib/types';
+import type { PaginatedResponse, Product, User, Order, OrderItem, ShippingAddress, CustomerInfo, Category, AvailableFilters } from '@/lib/types';
 import { getMockAvailableFilters } from '@/lib/mock-data'; // For temporary filter data
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -11,16 +10,29 @@ interface ApiProduct {
   name: string;
   description: string;
   price: number;
+  compareAtPrice?: number;
+  costPrice?: number;
+  discountPercentage?: number;
   imageUrl?: string;
   media?: { url: string; type: string; alt?: string; _id: string; id: string }[];
   brandId?: string;
   stock: number;
   categoryId: string;
   categoryName?: string; // If API provides this
-  colors?: { name: string; code: string }[];
+  colors?: { name: string; code: string; _id?: string; id?: string }[];
   availableSizes?: string[];
   createdAt?: string;
   updatedAt?: string;
+  ratings?: { average: number; count: number };
+  lowStockThreshold?: number;
+  status?: string;
+  isFeatured?: boolean;
+  tags?: string[];
+  weight?: { value: number; unit: string };
+  dimensions?: { length: number; width: number; height: number; unit: string };
+  seo?: { title: string; description: string; keywords: string[] };
+  slug?: string;
+  sku?: string;
 }
 
 // Helper interface for the actual API response structure for products list
@@ -48,6 +60,19 @@ interface RawProductListApiResponse {
         }
     };
     sort?: any;
+  };
+}
+
+// Interface for product IDs response (no meta field)
+interface RawProductIdsApiResponse {
+  type: "OK" | "ERROR";
+  message?: string;
+  data: {
+    products: ApiProduct[];
+    requestedIds: string[];
+    foundIds: string[];
+    missingIds: string[];
+    [key: string]: any;
   };
 }
 
@@ -321,13 +346,29 @@ const mapApiProductToProduct = (apiProduct: ApiProduct): Product => {
     name: apiProduct.name,
     description: apiProduct.description,
     price: apiProduct.price,
+    compareAtPrice: apiProduct.compareAtPrice,
+    costPrice: apiProduct.costPrice,
+    discountPercentage: apiProduct.discountPercentage,
     categoryId: apiProduct.categoryId,
     categoryName: apiProduct.categoryName,
     images: images,
+    imageUrl: apiProduct.imageUrl,
+    media: apiProduct.media,
     inStock: apiProduct.stock > 0,
+    stock: apiProduct.stock,
     colors: apiProduct.colors,
     availableSizes: apiProduct.availableSizes,
     brandId: apiProduct.brandId,
+    ratings: apiProduct.ratings,
+    lowStockThreshold: apiProduct.lowStockThreshold,
+    status: apiProduct.status,
+    isFeatured: apiProduct.isFeatured,
+    tags: apiProduct.tags,
+    weight: apiProduct.weight,
+    dimensions: apiProduct.dimensions,
+    seo: apiProduct.seo,
+    slug: apiProduct.slug,
+    sku: apiProduct.sku,
     createdAt: apiProduct.createdAt,
     updatedAt: apiProduct.updatedAt,
   };
@@ -369,13 +410,20 @@ export interface FetchProductsParams {
   sortOrder?: 'asc' | 'desc';
   name?: string;
   inStock?: boolean;
+  product_ids?: string[]; // Array of product IDs to fetch specific products
 }
 
 export async function fetchProducts(params: FetchProductsParams = {}): Promise<PaginatedResponse<Product>> {
-  const { page = 1, limit = 9, ...otherFilters } = params;
+  const { page = 1, limit = 9, product_ids, ...otherFilters } = params;
   const query = new URLSearchParams();
   query.set('page', String(page));
   query.set('limit', String(limit));
+
+  // Handle product_ids parameter specially - it should be passed as product_ids to the API
+  if (product_ids && product_ids.length > 0) {
+    query.set('product_ids', JSON.stringify(product_ids));
+    console.log('Setting product_ids in query:', JSON.stringify(product_ids));
+  }
 
   Object.entries(otherFilters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && String(value).trim() !== '') {
@@ -384,35 +432,71 @@ export async function fetchProducts(params: FetchProductsParams = {}): Promise<P
   });
 
   const endpoint = `/api/products?${query.toString()}`;
-  const rawResponse = await fetchFromAPI<RawProductListApiResponse>(endpoint);
+  console.log('API endpoint being called:', endpoint);
+  
+  // Use union type to handle both response structures
+  const rawResponse = await fetchFromAPI<RawProductListApiResponse | RawProductIdsApiResponse>(endpoint);
 
   const transformedProducts: Product[] = rawResponse.data.products.map(mapApiProductToProduct);
 
-  const availableFiltersData = rawResponse.meta.filters?.available || {};
+  // Check if this is a product IDs response (has requestedIds field) or regular paginated response
+  const isProductIdsResponse = 'requestedIds' in rawResponse.data;
 
-  return {
-    type: rawResponse.type,
-    message: rawResponse.message,
-    data: {
-      items: transformedProducts,
-    },
-    pagination: {
-      total: rawResponse.meta.total,
-      page: rawResponse.meta.page,
-      limit: rawResponse.meta.limit,
-      totalPages: rawResponse.meta.totalPages,
-      hasNextPage: rawResponse.meta.hasNextPage,
-      hasPrevPage: rawResponse.meta.hasPrevPage,
-    },
-    filters: {
-      applied: rawResponse.meta.filters?.applied || {},
-      available: {
-        minPrice: availableFiltersData.minPrice,
-        maxPrice: availableFiltersData.maxPrice,
-      }
-    },
-    sort: rawResponse.meta.sort || { by: 'createdAt', order: 'desc' },
-  };
+  if (isProductIdsResponse) {
+    // Handle product IDs response (no meta field)
+    const productIdsResponse = rawResponse as RawProductIdsApiResponse;
+    return {
+      type: productIdsResponse.type,
+      message: productIdsResponse.message,
+      data: {
+        items: transformedProducts,
+      },
+      pagination: {
+        total: transformedProducts.length,
+        page: 1,
+        limit: transformedProducts.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+      filters: {
+        applied: {},
+        available: {
+          minPrice: undefined,
+          maxPrice: undefined,
+        }
+      },
+      sort: { by: 'createdAt', order: 'desc' },
+    };
+  } else {
+    // Handle regular paginated response
+    const paginatedResponse = rawResponse as RawProductListApiResponse;
+    const availableFiltersData = paginatedResponse.meta.filters?.available || {};
+
+    return {
+      type: paginatedResponse.type,
+      message: paginatedResponse.message,
+      data: {
+        items: transformedProducts,
+      },
+      pagination: {
+        total: paginatedResponse.meta.total,
+        page: paginatedResponse.meta.page,
+        limit: paginatedResponse.meta.limit,
+        totalPages: paginatedResponse.meta.totalPages,
+        hasNextPage: paginatedResponse.meta.hasNextPage,
+        hasPrevPage: paginatedResponse.meta.hasPrevPage,
+      },
+      filters: {
+        applied: paginatedResponse.meta.filters?.applied || {},
+        available: {
+          minPrice: availableFiltersData.minPrice,
+          maxPrice: availableFiltersData.maxPrice,
+        }
+      },
+      sort: paginatedResponse.meta.sort || { by: 'createdAt', order: 'desc' },
+    };
+  }
 }
 
 export async function fetchProductById(id: string): Promise<Product | null> {
@@ -472,7 +556,7 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 // This function remains to provide filter options to the FilterPanel component
-export const fetchAvailableFilters = async (): Promise<AppAvailableFilters> => {
+export const fetchAvailableFilters = async (): Promise<AvailableFilters> => {
   // In a real scenario, this might fetch distinct filterable values from the API
   // or use metadata from the product listing endpoint if it provides it.
   // For now, we fetch categories and use a default/mock price range.

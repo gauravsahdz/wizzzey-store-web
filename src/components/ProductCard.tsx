@@ -30,7 +30,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
   
   // Image logic
-  const imageUrl = product.imageUrl || (product.images && product.images[0]) || "https://placehold.co/600x800.png";
+  const imageUrl = (product.images && product.images[0]) || "https://placehold.co/600x800.png";
 
   // Discount logic
   const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;

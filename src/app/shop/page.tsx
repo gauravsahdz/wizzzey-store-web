@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import type { Product, PaginatedResponse, Category, AvailableFilters as AppAvailableFilters, AppliedFilters } from '@/lib/types';
+import type { Product, PaginatedResponse, Category, AvailableFilters, AppliedFilters } from '@/lib/types';
 import { fetchProducts, fetchCategories } from '@/services/api'; 
 import ProductCard from '@/components/ProductCard';
 import FilterPanel from '@/components/FilterPanel';
@@ -27,17 +27,20 @@ type AppliedFiltersStateFromPanel = {
   categoryIds?: string[]; // FilterPanel can select multiple categories
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  productsIds?: string[]; // Added for products_ids
 };
 
 // AppliedFiltersForApi is what's passed to the fetchProducts service
 // and reflects the API's capability (e.g. single categoryId)
 type AppliedFiltersForApi = {
   page?: number;
+  limit?: number;
   categoryId?: string; // API expects single categoryId
   minPrice?: number;
   maxPrice?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  product_ids?: string[]; // Array of product IDs to fetch specific products
 };
 
 function ShopContent() {
@@ -66,17 +69,60 @@ function ShopContent() {
     const categoryIdsFromUrl = searchParams.getAll('category'); // Can be multiple from URL
     const minPriceStr = searchParams.get('minPrice');
     const maxPriceStr = searchParams.get('maxPrice');
+    const productsIdsStr = searchParams.get('products_ids'); // Get products_ids from URL
     
     let priceRangeVal: [number, number] | undefined = undefined;
     if (minPriceStr && maxPriceStr) {
         priceRangeVal = [parseFloat(minPriceStr), parseFloat(maxPriceStr)];
     }
     
+    let productsIds: string[] | undefined = undefined;
+    if (productsIdsStr) {
+      try {
+        // First try to parse as JSON
+        productsIds = JSON.parse(productsIdsStr);
+        // Ensure it's an array
+        if (!Array.isArray(productsIds)) {
+          console.warn('products_ids parameter is not an array, ignoring');
+          productsIds = undefined;
+        }
+      } catch (error) {
+        console.warn('Failed to parse products_ids as JSON, trying alternative formats:', error);
+        
+        // Try to parse as comma-separated values within brackets
+        // Handle format like: [id1, id2, id3] or [id1,id2,id3]
+        const bracketMatch = productsIdsStr.match(/^\[(.*)\]$/);
+        if (bracketMatch) {
+          const idsString = bracketMatch[1];
+          // Split by comma and clean up whitespace
+          const ids = idsString.split(',').map(id => id.trim()).filter(id => id.length > 0);
+          if (ids.length > 0) {
+            productsIds = ids;
+            console.log('Parsed products_ids from bracket format:', productsIds);
+          }
+        } else {
+          // Try to parse as single ID
+          const singleId = productsIdsStr.trim();
+          if (singleId.length > 0) {
+            productsIds = [singleId];
+            console.log('Parsed products_ids as single ID:', productsIds);
+          }
+        }
+        
+        if (!productsIds) {
+          console.warn('Could not parse products_ids parameter in any format:', productsIdsStr);
+        }
+      }
+    }
+    
+    console.log('Final parsed productsIds:', productsIds);
+    
     return {
       sortBy,
       sortOrder,
       categoryIds: categoryIdsFromUrl.length > 0 ? categoryIdsFromUrl : undefined,
       priceRange: priceRangeVal,
+      productsIds,
     };
   }, [searchParams]);
 
@@ -108,8 +154,15 @@ function ShopContent() {
         maxPrice: filtersToApply.priceRange?.[1],
         sortBy: filtersToApply.sortBy,
         sortOrder: filtersToApply.sortOrder,
+        product_ids: filtersToApply.productsIds, // Pass product IDs if available
       };
+      
+      console.log('Loading products with params:', serviceParams);
+      console.log('Product IDs being sent:', serviceParams.product_ids);
+      
       const response = await fetchProducts(serviceParams);
+      console.log('API response:', response);
+      
       setProductsResponse(response);
       if(response.filters?.available?.minPrice !== undefined && response.filters?.available?.maxPrice !== undefined){
         setApiPriceRange({min: response.filters.available.minPrice, max: response.filters.available.maxPrice});
@@ -163,7 +216,7 @@ function ShopContent() {
     router.push(`${pathname}?${queryParams.toString()}`);
   };
   
-  const constructedAvailableFilters: AppAvailableFilters | null = loadingCategories 
+  const constructedAvailableFilters: AvailableFilters | null = loadingCategories 
     ? null 
     : {
         categories: categories,
@@ -172,28 +225,33 @@ function ShopContent() {
 
   const isLoading = loadingProducts || loadingCategories;
   const currentCategoryName = currentFiltersForPanel.categoryIds?.[0] && categories.find(c => c.id === currentFiltersForPanel.categoryIds![0])?.name;
+  const isViewingSpecificProducts = currentFiltersForPanel.productsIds && currentFiltersForPanel.productsIds.length > 0;
 
 
   return (
     <div className="flex flex-col md:flex-row gap-8">
-      <aside className="w-full md:w-1/4 lg:w-1/5">
-        <FilterPanel 
-          availableFilters={constructedAvailableFilters} 
-          loadingFilters={loadingCategories} 
-          onFilterChange={handleFilterChange}
-          initialFilters={currentFiltersForPanel} 
-        />
-      </aside>
-      <main className="w-full md:w-3/4 lg:w-4/5">
+      {!isViewingSpecificProducts && (
+        <aside className="w-full md:w-1/4 lg:w-1/5">
+          <FilterPanel 
+            availableFilters={constructedAvailableFilters} 
+            loadingFilters={loadingCategories} 
+            onFilterChange={handleFilterChange}
+            initialFilters={currentFiltersForPanel} 
+          />
+        </aside>
+      )}
+      <main className={`w-full ${!isViewingSpecificProducts ? 'md:w-3/4 lg:w-4/5' : ''}`}>
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-bold font-headline">
-            {currentCategoryName || 'All Products'}
+            {isViewingSpecificProducts ? 'Selected Products' : (currentCategoryName || 'All Products')}
           </h1>
           <div className="flex items-center gap-2">
              <span className="text-sm text-muted-foreground">
-                {productsResponse?.pagination && productsResponse.pagination.total > 0 ? 
-                  `Showing ${((productsResponse.pagination.page - 1) * productsResponse.pagination.limit) + 1}-${Math.min(productsResponse.pagination.page * productsResponse.pagination.limit, productsResponse.pagination.total)} of ${productsResponse.pagination.total} products` 
-                  : productsResponse?.pagination?.total === 0 ? '0 products found' : ''
+                {isViewingSpecificProducts ? 
+                  `${productsResponse?.data.items.length || 0} selected products` :
+                  (productsResponse?.pagination && productsResponse.pagination.total > 0 ? 
+                    `Showing ${((productsResponse.pagination.page - 1) * productsResponse.pagination.limit) + 1}-${Math.min(productsResponse.pagination.page * productsResponse.pagination.limit, productsResponse.pagination.total)} of ${productsResponse.pagination.total} products` 
+                    : productsResponse?.pagination?.total === 0 ? '0 products found' : '')
                 }
              </span>
             <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')} aria-label="Grid view">
@@ -216,7 +274,7 @@ function ShopContent() {
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
-            {productsResponse.pagination && productsResponse.pagination.totalPages > 1 && (
+            {!isViewingSpecificProducts && productsResponse.pagination && productsResponse.pagination.totalPages > 1 && (
               <Pagination className="mt-12">
                 <PaginationContent>
                   <PaginationItem>
