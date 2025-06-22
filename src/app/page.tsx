@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -13,7 +13,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { ChevronRight, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast'; // Import useToast
 
-export default function HomePage() {
+// Component that handles the search params logic
+function HomePageContent() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [featuredCategories, setFeaturedCategories] = useState<Category[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -33,7 +34,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoadingProducts(true);
-    fetchProducts(1, 4) // Fetch 4 featured products using the new service
+    fetchProducts({ page: 1, limit: 4 }) // Fetch 4 featured products using the new service
       .then((response: PaginatedResponse<Product>) => {
         if (response && response.data && Array.isArray(response.data.items)) {
           console.log('Log: response.data.items', response.data.items);
@@ -172,5 +173,28 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-16">
+        <section className="relative bg-gradient-to-r from-primary/10 via-background to-accent/10 py-20 md:py-32 rounded-none overflow-hidden">
+          <div className="container mx-auto text-center">
+            <div className="animate-pulse">
+              <div className="h-16 bg-gray-300 rounded mb-6"></div>
+              <div className="h-8 bg-gray-300 rounded mb-10 max-w-2xl mx-auto"></div>
+              <div className="h-12 bg-gray-300 rounded w-32 mx-auto"></div>
+            </div>
+          </div>
+        </section>
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <LoadingSpinner size={64} />
+        </div>
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   );
 }
