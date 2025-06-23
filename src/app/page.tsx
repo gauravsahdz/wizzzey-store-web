@@ -94,7 +94,7 @@ function HomePageContent() {
           </Link>
         </div>
          <div className="absolute inset-0 z-[-1] overflow-hidden">
-            <Image src="https://placehold.co/1920x1080.png" alt="Fashion background" layout="fill" objectFit="cover" className="opacity-20" data-ai-hint="fashion runway model"/>
+            <Image src="/hero.jpg" alt="Fashion background" layout="fill" objectFit="cover" className="opacity-80" data-ai-hint="fashion runway model"/>
         </div>
       </section>
 

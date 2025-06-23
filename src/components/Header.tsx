@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const Header = () => {
   const { itemCount, hasMounted } = useCart();
@@ -16,8 +17,7 @@ const Header = () => {
     <header className="bg-card shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-primary font-headline">
-          <Shirt size={28} />
-          Wizzzey Store
+          <Image src="/wizzzey_logo.png" alt="Wizzzey Store" width={100} height={100} />
         </Link>
         <nav className="flex items-center space-x-4 md:space-x-6">
           <Link href="/" className="text-foreground hover:text-primary transition-colors">
