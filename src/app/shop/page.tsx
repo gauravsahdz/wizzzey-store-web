@@ -8,7 +8,7 @@ import ProductCard from '@/components/ProductCard';
 import FilterPanel from '@/components/FilterPanel';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, List } from 'lucide-react';
+import { LayoutGrid, List, Filter } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -19,6 +19,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useToast } from '@/hooks/use-toast';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 
 // AppliedFiltersState is what the FilterPanel outputs and what is stored in the URL
@@ -62,6 +63,7 @@ function ShopContent() {
   // Default price range, can be updated by API response if available
   const [apiPriceRange, setApiPriceRange] = useState<{min: number, max: number} | null>(null);
 
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const parseFiltersFromUrl = useCallback((): AppliedFiltersStateFromPanel => {
     const sortBy = searchParams.get('sortBy') || undefined;
@@ -230,8 +232,33 @@ function ShopContent() {
 
   return (
     <div className="flex flex-col md:flex-row gap-8">
+      {/* Mobile filter button and sidebar */}
+      <div className="block md:hidden mb-4">
+        <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="w-full flex items-center gap-2" onClick={() => setFilterSheetOpen(true)}>
+              <Filter size={18} />
+              <span>Filter</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 max-w-xs w-full">
+            <div className="p-6">
+              <FilterPanel
+                availableFilters={constructedAvailableFilters}
+                loadingFilters={loadingCategories}
+                onFilterChange={(filters) => {
+                  handleFilterChange(filters);
+                  setFilterSheetOpen(false);
+                }}
+                initialFilters={currentFiltersForPanel}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+      {/* Desktop sidebar */}
       {!isViewingSpecificProducts && (
-        <aside className="w-full md:w-1/4 lg:w-1/5">
+        <aside className="hidden md:block w-full md:w-1/4 lg:w-1/5">
           <FilterPanel 
             availableFilters={constructedAvailableFilters} 
             loadingFilters={loadingCategories} 
