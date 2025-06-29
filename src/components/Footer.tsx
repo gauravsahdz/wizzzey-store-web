@@ -22,9 +22,8 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-2 font-headline">Follow Us</h3>
             <div className="flex space-x-4">
-              <a href="#" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Facebook size={20} /></a>
-              <a href="#" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Twitter size={20} /></a>
-              <a href="#" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Instagram size={20} /></a>
+              <a href="https://www.facebook.com/share/1FnjQMVcaB/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Facebook size={20} /></a>
+              <a href="https://www.instagram.com/wizzzey.official?igsh=MWlvYWNzaDV6NDh3OQ%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Instagram size={20} /></a>
             </div>
           </div>
         </div>
